@@ -1,13 +1,6 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import subprocess
-import sys
-import threading
-import time
 from sklearn.linear_model import LogisticRegression
-from pyngrok import ngrok
-from pyngrok.exception import PyngrokNgrokError
 
 # Load the data
 @st.cache_data
@@ -98,37 +91,6 @@ def main():
 
     st.caption("A positive coefficient increases the chance of survival, while a negative one decreases it.")
 
-# Start the Streamlit app and ngrok tunnel
+# Run the app
 if __name__ == "__main__":
-    # The runner logic for the Streamlit app
-    def run_app():
-        subprocess.run([sys.executable, "-m", "streamlit", "run", sys.argv[0]])
-
-    # Start streamlit in a separate thread
-    threading.Thread(target=run_app, daemon=True).start()
-
-    # Use ngrok to create a public URL for the app
-    time.sleep(5)  # Give the app some time to start
-
-    # Authenticate ngrok using a secret key
-    try:
-        ngrok_auth_token = st.secrets["NGROK_AUTH_TOKEN"]
-        ngrok.set_auth_token(ngrok_auth_token)
-    except KeyError:
-        st.error("Error: Could not find ngrok auth token. Please set it as a secret named 'NGROK_AUTH_TOKEN' in the Streamlit app settings.")
-        st.stop()
-    except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
-        st.stop()
-
-    # Kill all existing ngrok tunnels to free up the session limit
-    try:
-        ngrok.kill()
-        public_url = ngrok.connect(8501)
-        st.write(f"Your Streamlit app is running at: {public_url}")
-    except PyngrokNgrokError as e:
-        st.error("It looks like your ngrok session is already in use. To fix this, please follow these steps:")
-        st.markdown("1. Go to the menu at the top of the screen and click 'Runtime'.")
-        st.markdown("2. Select 'Restart session'.")
-        st.markdown("3. Rerun the code cell once the session has restarted.")
-        st.warning(f"Error details: {e}")
+    main()
