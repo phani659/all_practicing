@@ -5,7 +5,6 @@ import subprocess
 import sys
 import threading
 import time
-import os
 from sklearn.linear_model import LogisticRegression
 from pyngrok import ngrok
 from pyngrok.exception import PyngrokNgrokError
@@ -111,23 +110,25 @@ if __name__ == "__main__":
     # Use ngrok to create a public URL for the app
     time.sleep(5)  # Give the app some time to start
 
-    # Authenticate ngrok using an environment variable
-    ngrok_auth_token = os.getenv('2v8nqm1AhbVyo5bSvCMYTGgkIXy_32tGHakywYSGs436dkpVH')
-    if not ngrok_auth_token:
-        print("Error: The NGROK_AUTH_TOKEN environment variable is not set.")
-        print("Please get your token from https://dashboard.ngrok.com/get-started/your-authtoken and set it as an environment variable.")
-        sys.exit(1)
-        
-    ngrok.set_auth_token(ngrok_auth_token)
+    # Authenticate ngrok using a secret key
+    try:
+        ngrok_auth_token = st.secrets["NGROK_AUTH_TOKEN"]
+        ngrok.set_auth_token(ngrok_auth_token)
+    except KeyError:
+        st.error("Error: Could not find ngrok auth token. Please set it as a secret named 'NGROK_AUTH_TOKEN' in the Streamlit app settings.")
+        st.stop()
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+        st.stop()
 
     # Kill all existing ngrok tunnels to free up the session limit
     try:
         ngrok.kill()
         public_url = ngrok.connect(8501)
-        print(f"\nYour Streamlit app is running at: {public_url}")
+        st.write(f"Your Streamlit app is running at: {public_url}")
     except PyngrokNgrokError as e:
-        print("It looks like your ngrok session is already in use. To fix this, please follow these steps:")
-        print("1. Go to the menu at the top of the screen and click 'Runtime'.")
-        print("2. Select 'Restart session'.")
-        print("3. Rerun the code cell once the session has restarted.")
-        print(f"Error details: {e}")
+        st.error("It looks like your ngrok session is already in use. To fix this, please follow these steps:")
+        st.markdown("1. Go to the menu at the top of the screen and click 'Runtime'.")
+        st.markdown("2. Select 'Restart session'.")
+        st.markdown("3. Rerun the code cell once the session has restarted.")
+        st.warning(f"Error details: {e}")
