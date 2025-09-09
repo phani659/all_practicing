@@ -10,16 +10,6 @@ from sklearn.linear_model import LogisticRegression
 from pyngrok import ngrok
 from pyngrok.exception import PyngrokNgrokError
 
-# Function to install a package
-def install_package(package):
-    """Installs a given Python package if it's not already installed."""
-    try:
-        __import__(package)
-    except ImportError:
-        print(f"Installing {package}...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-        print(f"Successfully installed {package}.")
-
 # Load the data
 @st.cache_data
 def load_data():
