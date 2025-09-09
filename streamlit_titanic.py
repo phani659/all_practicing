@@ -5,9 +5,20 @@ import subprocess
 import sys
 import threading
 import time
+import os
 from sklearn.linear_model import LogisticRegression
 from pyngrok import ngrok
 from pyngrok.exception import PyngrokNgrokError
+
+# Function to install a package
+def install_package(package):
+    """Installs a given Python package if it's not already installed."""
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"Installing {package}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"Successfully installed {package}.")
 
 # Load the data
 @st.cache_data
@@ -72,7 +83,7 @@ def main():
 
     # Create a prediction based on user input
     input_df = pd.DataFrame([[pclass, sex_options[sex], age, sibsp, parch, fare]],
-                            columns=['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare'])
+                             columns=['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare'])
 
     # Display the user input
     st.subheader("Your Input")
@@ -98,8 +109,9 @@ def main():
 
     st.caption("A positive coefficient increases the chance of survival, while a negative one decreases it.")
 
-# Start the Streamlit app in a new thread
+# Start the Streamlit app and ngrok tunnel
 if __name__ == "__main__":
+    # The runner logic for the Streamlit app
     def run_app():
         subprocess.run([sys.executable, "-m", "streamlit", "run", sys.argv[0]])
 
@@ -109,22 +121,23 @@ if __name__ == "__main__":
     # Use ngrok to create a public URL for the app
     time.sleep(5)  # Give the app some time to start
 
-    from google.colab import userdata
-    try:
-        ngrok_auth_token = userdata.get('NGROK_AUTH_TOKEN')
-        ngrok.set_auth_token(ngrok_auth_token)
-    except userdata.SecretNotFoundError as e:
-        st.error(f"Error: Could not find ngrok auth token. Please set it as a secret named 'NGROK_AUTH_TOKEN' in Colab.")
-        st.stop()
+    # Authenticate ngrok using an environment variable
+    ngrok_auth_token = os.getenv('2v8nqm1AhbVyo5bSvCMYTGgkIXy_32tGHakywYSGs436dkpVH')
+    if not ngrok_auth_token:
+        print("Error: The NGROK_AUTH_TOKEN environment variable is not set.")
+        print("Please get your token from https://dashboard.ngrok.com/get-started/your-authtoken and set it as an environment variable.")
+        sys.exit(1)
+        
+    ngrok.set_auth_token(ngrok_auth_token)
 
     # Kill all existing ngrok tunnels to free up the session limit
     try:
         ngrok.kill()
         public_url = ngrok.connect(8501)
-        st.write(f"Your Streamlit app is running at: {public_url}")
+        print(f"\nYour Streamlit app is running at: {public_url}")
     except PyngrokNgrokError as e:
-        st.error("It looks like your ngrok session is already in use. To fix this, please follow these steps:")
-        st.markdown("1. Go to the menu at the top of the screen and click **'Runtime'**.")
-        st.markdown("2. Select **'Restart session'**.")
-        st.markdown("3. Rerun the code cell once the session has restarted.")
-        st.warning(f"Error details: {e}")
+        print("It looks like your ngrok session is already in use. To fix this, please follow these steps:")
+        print("1. Go to the menu at the top of the screen and click 'Runtime'.")
+        print("2. Select 'Restart session'.")
+        print("3. Rerun the code cell once the session has restarted.")
+        print(f"Error details: {e}")
